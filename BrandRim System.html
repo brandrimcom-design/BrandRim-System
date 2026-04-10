@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <title>✨ BrandRimApp Pro | نظام إدارة العملاء المتكامل</title>
+    <script>
+        window.onerror = function(m, u, l) { alert('Error: ' + m + ' at ' + u + ':' + l); };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Cairo', 'Inter', sans-serif; transition: all 0.2s ease; }
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            min-height: 100vh;
+            animation: fadeIn 0.8s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes countUp { from { opacity: 0; transform: translateY(15px) scale(0.8); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+        @keyframes borderGlow { 0%,100% { border-color: rgba(139,92,246,0.4); box-shadow: 0 0 0 0 rgba(139,92,246,0.3); } 50% { border-color: rgba(192,132,252,0.8); box-shadow: 0 0 15px 3px rgba(139,92,246,0.3); } }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); } }
+        @keyframes glowPulse { 0% { box-shadow: 0 0 0 0 rgba(139,92,246,0.4); } 70% { box-shadow: 0 0 0 10px rgba(139,92,246,0); } 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0); } }
+        
+        .glass {
+            background: rgba(15, 25, 45, 0.65);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(139,92,246,0.3);
+            border-radius: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            animation: slideUp 0.5s ease-out;
+        }
+        .btn-gradient { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); transition: 0.3s; }
+        .btn-gradient:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        
+        /* أزرار التحكم العلوية مع تباعد محسّن */
+        .action-btn {
+            transition: all 0.25s ease;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+        }
+        .action-btn i { font-size: 1rem; transition: transform 0.2s; }
+        .action-btn:hover i { transform: scale(1.1); }
+        .btn-spacing-left { margin-right: 0.75rem; } /* تباعد مخصص بين الأزرار */
+        
+        .stat-card {
+            background: rgba(79, 70, 229, 0.3);
+            backdrop-filter: blur(8px);
+            border-radius: 1.5rem;
+            padding: 1.2rem;
+            text-align: center;
+            transition: transform 0.3s, background 0.3s;
+            border: 1px solid rgba(139,92,246,0.4);
+            animation: borderGlow 3s ease-in-out infinite;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.05) 50%, transparent 60%);
+            background-size: 200% 200%;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        .stat-card:hover { transform: translateY(-8px) scale(1.03); background: rgba(79, 70, 229, 0.55); }
+        .stat-number {
+            font-size: 1.6rem;
+            font-weight: 900;
+            display: block;
+            animation: countUp 0.6s cubic-bezier(0.2,0.9,0.4,1.1);
+        }
+        .client-table {
+            background: rgba(79, 70, 229, 0.15);
+            backdrop-filter: blur(4px);
+            border-radius: 1.5rem;
+            overflow-x: auto;
+            display: block;
+            white-space: nowrap;
+            border: 1px solid rgba(139,92,246,0.3);
+        }
+        .client-table th, .client-table td { padding: 0.6rem 0.5rem; }
+        .client-table th { background: rgba(79, 70, 229, 0.5); color: #f3f4f6; border-bottom: 1px solid #8b5cf6; font-size: 0.8rem; }
+        .client-table td { background: rgba(15, 23, 42, 0.6); border-bottom: 1px solid #4c1d95; color: #e5e7eb; font-size: 0.8rem; }
+        .client-table tbody tr:hover td { background: rgba(139, 92, 246, 0.4); }
+        
+        .badge-active { background: #10b981; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.7rem; }
+        .badge-expiring { background: #f59e0b; animation: pulse 1s infinite; border-radius: 999px; font-size: 0.7rem; }
+        .badge-expired { background: #ef4444; border-radius: 999px; font-size: 0.7rem; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        
+        .modal-glass {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease;
+        }
+        .modal-content {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            max-width: 550px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            color: white;
+            border: 1px solid rgba(139,92,246,0.5);
+            box-shadow: 0 25px 40px rgba(0,0,0,0.4);
+        }
+        
+        /* أنيميشن رائع لباقات VIP */
+        .vip-plan {
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            cursor: pointer;
+            animation: float 3s ease-in-out infinite;
+            position: relative;
+            overflow: hidden;
+        }
+        .vip-plan:nth-child(1) { animation-delay: 0s; }
+        .vip-plan:nth-child(2) { animation-delay: 0.2s; }
+        .vip-plan:nth-child(3) { animation-delay: 0.4s; }
+        .vip-plan::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.6s;
+        }
+        .vip-plan:hover::before { left: 100%; }
+        .vip-plan:hover { transform: translateY(-10px) scale(1.05); background: rgba(139,92,246,0.4); box-shadow: 0 15px 30px rgba(0,0,0,0.3); }
+        .vip-plan.selected {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #1e1b4b;
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(245,158,11,0.7);
+            animation: glowPulse 0.6s ease-out;
+        }
+        
+        /* تحسين نافذة سياسة الخصوصية */
+        .privacy-card {
+            transition: all 0.3s;
+            animation: slideRight 0.4s ease-out;
+            border-right: 3px solid #8b5cf6;
+        }
+        .privacy-card:hover { transform: translateX(-5px); background: rgba(139,92,246,0.15); }
+        
+        .wizard-step { animation: slideRight 0.3s ease-out; }
+        .step-progress { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+        .step-dot { flex: 1; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; transition: all 0.3s; }
+        .step-dot.active { background: linear-gradient(90deg, #8b5cf6, #c084fc); animation: glowPulse 1s infinite; }
+        .step-dot.completed { background: #10b981; }
+        
+        .auth-field, .wizard-field {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(139,92,246,0.4);
+            border-radius: 1rem;
+            padding: 0.7rem 1rem;
+            color: white;
+            width: 100%;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .auth-field:focus, .wizard-field:focus {
+            outline: none;
+            border-color: #c084fc;
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-2px);
+        }
+        
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #1f2937; color: white; padding: 0.5rem 1rem;
+            border-radius: 9999px; font-size: 0.875rem; z-index: 1100;
+            animation: slideUp 0.3s ease;
+        }
+        
+        .contact-card {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .contact-card:hover { background: rgba(139,92,246,0.3); transform: translateX(-5px); }
+        
+        .notification-item {
+            background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(239,68,68,0.15));
+            backdrop-filter: blur(8px);
+            border-right: 4px solid #f59e0b;
+            border-radius: 1rem;
+            padding: 0.7rem 1rem;
+            margin-bottom: 0.8rem;
+            animation: slideRight 0.4s ease-out;
+        }
+        .notif-dismissed { animation: fadeOut 0.4s ease forwards; }
+        @keyframes fadeOut { to { opacity: 0; transform: translateX(60px); max-height: 0; margin: 0; padding: 0; overflow: hidden; } }
+    </style>
+</head>
+<body class="p-4 min-h-screen flex items-center justify-center">
+
+<div id="app" class="w-full max-w-7xl mx-auto">
+    <!-- شاشة تسجيل الدخول -->
+    <div id="authScreen" class="flex items-center justify-center min-h-[80vh]">
+        <div class="glass w-full max-w-md text-center p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-white">brandrim<span class="text-yellow-300">app</span></h1>
+                <button id="langBtn" class="bg-white/20 px-3 py-1 rounded-full text-white"><span id="langFlag">🇲🇦</span> <span id="langName">العربية</span></button>
+            </div>
+            <div class="flex gap-4 mb-6">
+                <button id="showLoginBtn" class="flex-1 py-2 rounded-full bg-white/20 text-white font-bold"><span data-i18n="login">تسجيل الدخول</span></button>
+                <button id="showSignupBtn" class="flex-1 py-2 rounded-full text-white"><span data-i18n="signup">إنشاء حساب</span></button>
+            </div>
+            <form id="loginForm">
+                <input type="text" id="email" placeholder="البريد الإلكتروني" class="auth-field mb-3">
+                <input type="password" id="password" placeholder="كلمة المرور" class="auth-field mb-3">
+                <div class="flex justify-center items-center gap-2 mb-4"><input type="checkbox" id="loginVerify" class="w-4 h-4"><label for="loginVerify" data-i18n="verify">تأكيد أنك لست روبوت</label></div>
+                <button type="button" id="loginButton" class="btn-gradient w-full py-2 rounded-full text-white font-bold"><span data-i18n="login_btn">دخول</span></button>
+                <div class="mt-3 flex justify-between"><a id="forgotPass" class="text-yellow-300 text-sm cursor-pointer" data-i18n="forgot">نسيت كلمة المرور؟</a><a id="privacyBtn" class="text-purple-300 text-xs cursor-pointer">🔒 سياسة الخصوصية</a></div>
+                <!-- تم إخفاء النص "البيانات محفوظة محلياً" حسب الطلب -->
+            </form>
+            <form id="signupForm" style="display:none">
+                <input type="email" id="signupEmail" placeholder="البريد الإلكتروني" class="auth-field mb-3">
+                <input type="text" id="signupName" placeholder="الاسم الكامل" class="auth-field mb-3">
+                <input type="password" id="signupPassword" placeholder="كلمة المرور" class="auth-field mb-3">
+                <input type="password" id="signupConfirm" placeholder="تأكيد كلمة المرور" class="auth-field mb-3">
+                <div class="flex justify-center items-center gap-2 mb-4"><input type="checkbox" id="signupVerify" class="w-4 h-4"><label for="signupVerify" data-i18n="verify">تأكيد أنك لست روبوت</label></div>
+                <button type="submit" id="doSignup" class="btn-gradient w-full py-2 rounded-full text-white font-bold"><span data-i18n="signup_btn">تسجيل</span></button>
+            </form>
+        </div>
+    </div>
+
+    <!-- لوحة التحكم الرئيسية -->
+    <div id="dashboardScreen" style="display:none">
+        <div class="glass p-4 md:p-6">
+            <div class="flex justify-between items-center flex-wrap gap-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <img id="avatar" class="w-10 h-10 rounded-full border-2 border-white" src="https://ui-avatars.com/api/?background=8b5cf6&color=fff&bold=true&size=40&name=User">
+                    <div><p class="text-white text-xs" data-i18n="welcome">مرحباً</p><h3 id="userEmail" class="text-white font-bold text-base"></h3></div>
+                </div>
+                <div class="flex gap-3 flex-wrap">
+                    <!-- تباعد محسّن بين الأزرار + أيقونات وخطوط -->
+                    <button id="contactBtn" class="action-btn bg-blue-600 hover:bg-blue-700 text-white"><i class="fas fa-headset"></i> <span data-i18n="contact">تواصل معنا</span></button>
+                    <button id="vipBtn" class="action-btn bg-amber-500 hover:bg-amber-600 text-white"><i class="fas fa-crown"></i> <span data-i18n="vip">VIP</span></button>
+                    <button id="changePassBtn" class="action-btn bg-indigo-500/80 hover:bg-indigo-600 text-white"><i class="fas fa-key"></i> <span data-i18n="change_password">تغيير كلمة المرور</span></button>
+                    <button id="logoutBtn" class="action-btn bg-red-500/80 hover:bg-red-600 text-white"><span data-i18n="logout">خروج</span> <i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
+            
+            <div id="notificationsArea" class="mb-5"></div>
+            <div id="milestoneBar" class="mb-4"></div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <div class="stat-card"><i class="fas fa-users text-2xl text-indigo-300 mb-1"></i><p class="stat-number clients" id="totalCount">0</p><p class="text-xs" data-i18n="total_clients">إجمالي العملاء</p></div>
+                <div class="stat-card"><i class="fas fa-hourglass-half text-2xl text-yellow-300 mb-1"></i><p class="stat-number expiring" id="expiringCount">0</p><p class="text-xs" data-i18n="expiring_soon">ينتهي قريباً</p></div>
+                <div class="stat-card"><i class="fas fa-coins text-2xl text-emerald-300 mb-1"></i><p class="stat-number revenue" id="revenue">0.00</p><p class="text-xs" data-i18n="revenue">الإيرادات</p></div>
+                <div class="stat-card"><i class="fas fa-chart-line text-2xl text-fuchsia-300 mb-1"></i><p class="stat-number profit" id="totalProfit">0.00</p><p class="text-xs" data-i18n="net_profit">صافي الربح</p></div>
+            </div>
+            
+            <div class="flex flex-wrap gap-2 mb-4">
+                <button id="addClientBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-full text-sm"><i class="fas fa-plus"></i> <span data-i18n="add_client">إضافة عميل</span></button>
+                <button id="exportCsv" class="bg-green-600/80 px-3 py-1.5 rounded-full text-white text-sm">CSV</button>
+                <button id="exportJson" class="bg-blue-600/80 px-3 py-1.5 rounded-full text-white text-sm">JSON (عملاء)</button>
+                <button id="exportFullBackup" class="bg-purple-700/80 px-3 py-1.5 rounded-full text-white text-sm"><i class="fas fa-database"></i> نسخة احتياطية كاملة</button>
+                <button id="importFullBackup" class="bg-amber-600/80 px-3 py-1.5 rounded-full text-white text-sm"><i class="fas fa-upload"></i> استيراد نسخة</button>
+                <input type="file" id="importFile" accept=".json" class="hidden">
+                <div class="flex gap-1 bg-white/10 rounded-full p-0.5">
+                    <button data-curr="MAD" class="curr-btn px-2 py-0.5 rounded-full text-white text-xs">🇲🇦 درهم</button>
+                    <button data-curr="USD" class="curr-btn px-2 py-0.5 rounded-full text-white text-xs">$ USD</button>
+                    <button data-curr="EUR" class="curr-btn px-2 py-0.5 rounded-full text-white text-xs">€ EUR</button>
+                </div>
+                <button id="clearNotifsState" class="bg-gray-600/70 text-white px-3 py-1.5 rounded-full text-xs"><i class="fas fa-brush"></i> مسح تخطي/معالجة</button>
+            </div>
+            <input type="text" id="searchInput" placeholder="بحث..." class="w-full mb-4 bg-black/30 text-white rounded-full px-4 py-2 text-sm">
+            <div class="overflow-x-auto">
+                <table class="client-table w-full">
+                    <thead><tr><th>#</th><th data-i18n="name">الاسم</th><th data-i18n="email">البريد</th><th data-i18n="phone">الهاتف</th><th data-i18n="service">الخدمة</th><th data-i18n="country">الدولة</th><th data-i18n="app_type">نوع التطبيق</th><th>KEY</th><th>MAC</th><th data-i18n="start_date">تاريخ البداية</th><th data-i18n="end_date">تاريخ النهاية</th><th data-i18n="remaining">المتبقي</th><th data-i18n="price">السعر</th><th data-i18n="net_profit">صافي الربح</th><th data-i18n="actions">إجراءات</th></tr></thead>
+                    <tbody id="clientsTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------------------- البيانات الأساسية ----------------------
+    let currentLang = localStorage.getItem('lang') || 'ar';
+    let currentCurrency = localStorage.getItem('currency') || 'MAD';
+    let loggedInUser = null;
+
+    const SUPABASE_URL = 'https://ipxifkmxzqniipvqvphw.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_d-jjZ7jrUcOxOZa0HTuFxA_FPpgh2YG';
+    console.log('Supabase Step 0: window.supabase available =', !!window.supabase);
+    console.log('Supabase Step 0.1: createClient available =', !!window.supabase?.createClient);
+    console.log('Supabase Step 0.2: URL valid =', typeof SUPABASE_URL === 'string' && SUPABASE_URL.startsWith('https://'));
+    window.supabaseClient = window.supabaseClient || (
+        window.supabase?.createClient
+            ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+            : null
+    );
+    console.log('Supabase initialized:', !!window.supabaseClient);
+
+    const currencySymbols = { MAD: 'درهم', USD: '$', EUR: '€' };
+    const exchange = { MAD:1, USD:0.1, EUR:0.092 };
+    const vipPrices = { monthly: 2, yearly: 10, lifetime: 40 };
+
+    const translations = {
+        ar: { login:"تسجيل الدخول", signup:"إنشاء حساب", email:"البريد", password:"كلمة المرور", verify:"تأكيد", forgot:"نسيت كلمة المرور؟", welcome:"مرحباً", total_clients:"إجمالي العملاء", expiring_soon:"ينتهي قريباً", revenue:"الإيرادات", net_profit:"صافي الربح", add_client:"إضافة عميل", name:"الاسم", phone:"الهاتف", service:"الخدمة", country:"الدولة", start_date:"تاريخ البداية", end_date:"تاريخ النهاية", remaining:"المتبقي", price:"السعر", actions:"إجراءات", contact:"تواصل معنا", vip:"VIP", logout:"خروج", edit:"تعديل", delete:"حذف", copy:"نسخ", confirmDel:"هل أنت متأكد؟", daysLeft:"يوم", save:"حفظ", cancel:"إلغاء", clientName:"الاسم الكامل", notes:"ملاحظات", subscriptionSent:"تم إرسال الطلب", copied:"تم النسخ", monthly:"شهري", yearly:"سنوي", lifetime:"مدى الحياة", search:"بحث...", no_clients:"لا يوجد عملاء", app_type:"نوع التطبيق", change_password:"تغيير كلمة المرور", new_password:"كلمة جديدة", reset_done:"تم إعادة التعيين", invalid_code:"كود غير صحيح", fullname:"الاسم الكامل", current_password:"كلمة المرور الحالية", confirm_new_password:"تأكيد كلمة المرور", password_mismatch:"كلمة المرور غير متطابقة", wrong_current_password:"كلمة المرور الحالية غير صحيحة", password_updated:"تم تحديث كلمة المرور", login_btn:"دخول", signup_btn:"تسجيل", notification_title:"تنبيهات الاشتراك", expiring_soon_notif:"اشتراك {name} ينتهي بعد {days} أيام", copy_phone:"نسخ الهاتف", copy_email:"نسخ البريد" },
+        en: { login:"Login", signup:"Sign Up", email:"Email", password:"Password", verify:"Verify", forgot:"Forgot password?", welcome:"Welcome", total_clients:"Total Clients", expiring_soon:"Expiring soon", revenue:"Revenue", net_profit:"Net Profit", add_client:"Add Client", name:"Name", phone:"Phone", service:"Service", country:"Country", start_date:"Start Date", end_date:"End Date", remaining:"Remaining", price:"Price", actions:"Actions", contact:"Contact Us", vip:"VIP", logout:"Logout", edit:"Edit", delete:"Delete", copy:"Copy", confirmDel:"Are you sure?", daysLeft:"days", save:"Save", cancel:"Cancel", clientName:"Full name", notes:"Notes", subscriptionSent:"Request sent", copied:"Copied", monthly:"Monthly", yearly:"Yearly", lifetime:"Lifetime", search:"Search...", no_clients:"No clients", app_type:"App Type", change_password:"Change Password", new_password:"New Password", reset_done:"Reset done", invalid_code:"Invalid code", fullname:"Full Name", current_password:"Current Password", confirm_new_password:"Confirm New Password", password_mismatch:"Passwords do not match", wrong_current_password:"Current password is incorrect", password_updated:"Password updated", login_btn:"Login", signup_btn:"Sign Up", notification_title:"Subscription Alerts", expiring_soon_notif:"{name} subscription expires in {days} days", copy_phone:"Copy Phone", copy_email:"Copy Email" },
+        fr: { login:"Connexion", signup:"Inscription", email:"Email", password:"Mot de passe", verify:"Vérifier", forgot:"Mot de passe oublié ?", welcome:"Bienvenue", total_clients:"Total clients", expiring_soon:"Expire bientôt", revenue:"Revenu", net_profit:"Bénéfice net", add_client:"Ajouter client", name:"Nom", phone:"Téléphone", service:"Service", country:"Pays", start_date:"Date début", end_date:"Date fin", remaining:"Restant", price:"Prix", actions:"Actions", contact:"Contactez-nous", vip:"VIP", logout:"Déconnexion", edit:"Modifier", delete:"Supprimer", copy:"Copier", confirmDel:"Êtes-vous sûr ?", daysLeft:"jours", save:"Enregistrer", cancel:"Annuler", clientName:"Nom complet", notes:"Notes", subscriptionSent:"Demande envoyée", copied:"Copié", monthly:"Mensuel", yearly:"Annuel", lifetime:"À vie", search:"Rechercher...", no_clients:"Aucun client", app_type:"Type d'app", change_password:"Changer mot de passe", new_password:"Nouveau mot de passe", reset_done:"Réinitialisé", invalid_code:"Code invalide", fullname:"Nom complet", current_password:"Mot de passe actuel", confirm_new_password:"Confirmer mot de passe", password_mismatch:"Les mots de passe ne correspondent pas", wrong_current_password:"Mot de passe actuel incorrect", password_updated:"Mot de passe mis à jour", login_btn:"Se connecter", signup_btn:"S'inscrire", notification_title:"Alertes d'expiration", expiring_soon_notif:"L'abonnement de {name} expire dans {days} jours", copy_phone:"Copier téléphone", copy_email:"Copier email" }
+    };
+    function t(key) { return translations[currentLang][key] || key; }
+
+    function normalizeEmail(email) { return (email || '').trim().toLowerCase(); }
+    function getAuthErrorMessage(error, fallback = 'Authentication failed.') {
+        return error?.message || fallback;
+    }
+    function cleanupLegacyAuthStorage() {
+        localStorage.removeItem('brandrim_users');
+    }
+    function getUserStorageKey(userId) { return `brandrim_user_data_${userId}`; }
+    function getDefaultUserData(authUser) {
+        const normalizedEmail = normalizeEmail(authUser?.email);
+        return {
+            id: authUser?.id,
+            email: normalizedEmail,
+            name: authUser?.user_metadata?.full_name || authUser?.user_metadata?.name || normalizedEmail,
+            clients: [],
+            unlockedThresholds: []
+        };
+    }
+    function hydrateLoggedInUser(authUser) {
+        if(!authUser) {
+            loggedInUser = null;
+            return null;
+        }
+        let stored = {};
+        try {
+            stored = JSON.parse(localStorage.getItem(getUserStorageKey(authUser.id)) || '{}');
+        } catch (error) {
+            stored = {};
+        }
+        const defaults = getDefaultUserData(authUser);
+        loggedInUser = {
+            ...defaults,
+            ...stored,
+            id: authUser.id,
+            email: normalizeEmail(authUser.email),
+            name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || stored.name || defaults.name,
+            clients: Array.isArray(stored.clients) ? stored.clients : [],
+            unlockedThresholds: Array.isArray(stored.unlockedThresholds) ? stored.unlockedThresholds : []
+        };
+        saveUsers();
+        return loggedInUser;
+    }
+    function saveUsers() {
+        if(!loggedInUser?.id) return;
+        localStorage.setItem(getUserStorageKey(loggedInUser.id), JSON.stringify({
+            id: loggedInUser.id,
+            email: normalizeEmail(loggedInUser.email),
+            name: loggedInUser.name,
+            clients: Array.isArray(loggedInUser.clients) ? loggedInUser.clients : [],
+            unlockedThresholds: Array.isArray(loggedInUser.unlockedThresholds) ? loggedInUser.unlockedThresholds : []
+        }));
+    }
+    function updateAvatar() {
+        if(!loggedInUser) return;
+        document.getElementById('avatar').src=`https://ui-avatars.com/api/?background=8b5cf6&color=fff&bold=true&size=40&name=${encodeURIComponent(loggedInUser.name||loggedInUser.email)}`;
+    }
+    function showAuthenticatedView(authUser) {
+        hydrateLoggedInUser(authUser);
+        document.getElementById('authScreen').style.display='none';
+        document.getElementById('dashboardScreen').style.display='block';
+        updateAvatar();
+        renderDashboard();
+        renderNotifications();
+    }
+    function showLoggedOutView() {
+        loggedInUser = null;
+        document.getElementById('authScreen').style.display='flex';
+        document.getElementById('dashboardScreen').style.display='none';
+        document.getElementById('password').value = '';
+        document.getElementById('signupPassword').value = '';
+        document.getElementById('signupConfirm').value = '';
+    }
+    async function initializeAuth() {
+        cleanupLegacyAuthStorage();
+        if(!supabase) {
+            alert('Supabase failed to load. Please check your internet connection or CDN access.');
+            showLoggedOutView();
+            return;
+        }
+        const { data, error } = await window.supabaseClient.auth.getSession();
+        if(error) {
+            alert(getAuthErrorMessage(error));
+            showLoggedOutView();
+        } else if(data?.session?.user) {
+            showAuthenticatedView(data.session.user);
+        } else {
+            showLoggedOutView();
+        }
+        window.supabaseClient.auth.onAuthStateChange((_event, session) => {
+            if(session?.user) showAuthenticatedView(session.user);
+            else showLoggedOutView();
+        });
+    }
+    
+    // ---------------------- العتبات (مبسطة) ----------------------
+    const THRESHOLDS = [{ limit:5, code:'1990', icon:'🌱', label:'أول 5 عملاء' }, { limit:50, code:'2000', icon:'🚀', label:'50 عميلاً' }, { limit:100, code:'2010', icon:'💎', label:'100 عميل' }];
+    function checkThresholdNeeded(newCount) { let unlocked = loggedInUser?.unlockedThresholds||[]; for(let i=THRESHOLDS.length-1;i>=0;i--) if(newCount>=THRESHOLDS[i].limit && !unlocked.includes(THRESHOLDS[i].limit)) return THRESHOLDS[i]; return null; }
+    function showThresholdLock(threshold, onUnlock) { onUnlock(); }
+    function isFirstOfMonth() { return new Date().getDate() === 1; }
+    function isMonthlyUnlocked() { return localStorage.getItem(`monthly_unlock_${loggedInUser?.email}_${new Date().getFullYear()}_${new Date().getMonth()+1}`) === 'true'; }
+    function setMonthlyUnlocked() { localStorage.setItem(`monthly_unlock_${loggedInUser?.email}_${new Date().getFullYear()}_${new Date().getMonth()+1}`, 'true'); }
+    function needsMonthlyLock() { return isFirstOfMonth() && !isMonthlyUnlocked(); }
+    function showMonthlyLock(onUnlock) { onUnlock(); }
+    
+    function addClientToUser(client, callback) {
+        if(!loggedInUser) return;
+        const doAdd=()=>{
+            let newCount=(loggedInUser.clients?.length||0)+1;
+            let th=checkThresholdNeeded(newCount);
+            loggedInUser.clients.push({ id:Date.now(), ...client });
+            saveUsers(); renderDashboard(); renderNotifications();
+            if(callback) callback();
+            if(th) setTimeout(()=>showThresholdLock(th,()=>{}),300);
+        };
+        if(needsMonthlyLock()) showMonthlyLock(doAdd); else doAdd();
+    }
+    function deleteClient(id) { if(loggedInUser){ loggedInUser.clients=loggedInUser.clients.filter(c=>c.id!=id); saveUsers(); renderDashboard(); renderNotifications(); } }
+    function daysRemaining(end) { try{ return Math.ceil((new Date(end)-new Date())/(1000*60*60*24)); }catch(e){ return -1; } }
+    
+    // ---------------------- الإشعارات ----------------------
+    let skippedNotifs = JSON.parse(sessionStorage.getItem('skippedNotifs') || '[]');
+    let processedNotifs = JSON.parse(sessionStorage.getItem('processedNotifs') || '[]');
+    function renderNotifications() {
+        if(!loggedInUser) return;
+        const clients = loggedInUser.clients || [];
+        const expiringSoon = clients.filter(c => { let d=daysRemaining(c.endDate); return d>=0 && d<=7; });
+        const container = document.getElementById('notificationsArea');
+        if(!container) return;
+        container.innerHTML = '';
+        const visible = expiringSoon.filter(c => !skippedNotifs.includes(String(c.id)) && !processedNotifs.includes(String(c.id)));
+        if(expiringSoon.length===0) return;
+        const header = document.createElement('div'); header.className='mb-2 flex items-center gap-2'; header.innerHTML=`<i class="fas fa-bell text-amber-300 animate-pulse"></i><span class="text-white font-bold text-xs">${t('notification_title')}</span><span class="bg-amber-400/30 text-amber-200 text-xs px-2 rounded-full">${visible.length}</span>`;
+        container.appendChild(header);
+        visible.forEach(c => {
+            const days = daysRemaining(c.endDate);
+            const div = document.createElement('div'); div.className='notification-item'; div.innerHTML=`<div class="flex justify-between items-center flex-wrap gap-2"><div><i class="fas fa-exclamation-triangle text-amber-400 text-sm"></i> <span class="text-white text-xs">${t('expiring_soon_notif').replace('{name}',c.name).replace('{days}',days)}</span></div><div class="flex gap-1"><button class="copy-notif-btn copy-phone text-white text-xs px-2 py-1 rounded-full bg-white/20"><i class="fas fa-phone-alt"></i> ${t('copy_phone')}</button><button class="copy-notif-btn copy-email text-white text-xs px-2 py-1 rounded-full bg-white/20"><i class="fas fa-envelope"></i> ${t('copy_email')}</button><button class="process-notif-btn text-white text-xs px-2 py-1 rounded-full bg-emerald-600/60">✅ معالجة</button><button class="skip-notif-btn text-white text-xs px-2 py-1 rounded-full bg-gray-600/60">⏭️ تخطي</button></div></div>`;
+            div.querySelector('.copy-phone').onclick=(e)=>{e.stopPropagation(); copyToClipboard(c.phone||'', t('copied')); };
+            div.querySelector('.copy-email').onclick=(e)=>{e.stopPropagation(); copyToClipboard(c.email||'', t('copied')); };
+            div.querySelector('.process-notif-btn').onclick=(e)=>{e.stopPropagation(); processedNotifs.push(String(c.id)); sessionStorage.setItem('processedNotifs',JSON.stringify(processedNotifs)); renderNotifications(); showToast('✅ تمت المعالجة'); };
+            div.querySelector('.skip-notif-btn').onclick=(e)=>{e.stopPropagation(); skippedNotifs.push(String(c.id)); sessionStorage.setItem('skippedNotifs',JSON.stringify(skippedNotifs)); div.classList.add('notif-dismissed'); setTimeout(()=>renderNotifications(),400); showToast('⏭️ تم تخطي'); };
+            container.appendChild(div);
+        });
+        if(processedNotifs.length){ let pDiv=document.createElement('div'); pDiv.className='mt-2 text-xs text-emerald-300'; pDiv.innerHTML=`✅ معالج: ${processedNotifs.length} <button id="resetProcessed" class="text-gray-400 mr-2 underline">تراجع الكل</button>`; container.appendChild(pDiv); document.getElementById('resetProcessed')?.addEventListener('click',()=>{ processedNotifs=[]; sessionStorage.setItem('processedNotifs','[]'); renderNotifications(); }); }
+    }
+    
+    // ---------------------- أدوات مساعدة ----------------------
+    function copyToClipboard(text,msg) { if(!text) return; navigator.clipboard.writeText(text).then(()=>showToast(msg)).catch(()=>{ let ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); showToast(msg); }); }
+    function showToast(msg) { let t=document.createElement('div'); t.className='toast'; t.innerText=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2000); }
+    function escapeHtml(str) { return String(str||'').replace(/[&<>]/g, m=>({ '&':'&amp;', '<':'&lt;', '>':'&gt;' })[m]); }
+    
+    // ---------------------- معالج إضافة عميل متعدد الخطوات (Wizard) ----------------------
+    function openAddClientWizard() {
+        let wizardData = {
+            name: '', email: '', phone: '', serviceType: '', country: '', appType: '',
+            key: '', mac: '', startDate: new Date().toISOString().split('T')[0],
+            endDate: new Date(Date.now() + 30*86400000).toISOString().split('T')[0],
+            price: 0, netProfit: 0, notes: ''
+        };
+        let steps = [
+            { title: 'المعلومات الأساسية', fields: ['name','email','phone'], labels: { name:t('clientName'), email:t('email'), phone:t('phone') }, types: { name:'text', email:'email', phone:'tel' } },
+            { title: 'تفاصيل الخدمة', fields: ['serviceType','country','appType'], labels: { serviceType:t('service'), country:t('country'), appType:t('app_type') }, types: { serviceType:'text', country:'text', appType:'text' } },
+            { title: 'بيانات تقنية', fields: ['key','mac'], labels: { key:'KEY', mac:'MAC' }, types: { key:'text', mac:'text' } },
+            { title: 'التواريخ', fields: ['startDate','endDate'], labels: { startDate:t('start_date'), endDate:t('end_date') }, types: { startDate:'date', endDate:'date' } },
+            { title: 'المالية والملاحظات', fields: ['price','netProfit','notes'], labels: { price:t('price'), netProfit:t('net_profit'), notes:t('notes') }, types: { price:'number', netProfit:'number', notes:'textarea' } }
+        ];
+        let currentStep = 0;
+        const modal = document.createElement('div'); modal.className = 'modal-glass';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:550px">
+                <div class="step-progress" id="wizardProgress"></div>
+                <div id="wizardStepContent" class="wizard-step"></div>
+                <div class="flex gap-3 mt-5">
+                    <button id="wizardPrev" class="flex-1 bg-gray-600 py-2 rounded-full text-sm">${t('prev')}</button>
+                    <button id="wizardNext" class="flex-1 bg-purple-600 py-2 rounded-full text-sm font-bold">${t('next')}</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        
+        function updateStepUI() {
+            const progressDiv = document.getElementById('wizardProgress');
+            progressDiv.innerHTML = steps.map((_,idx) => `<div class="step-dot ${idx<currentStep ? 'completed' : (idx===currentStep ? 'active' : '')}"></div>`).join('');
+            const step = steps[currentStep];
+            let html = `<h3 class="text-lg font-bold mb-3 text-center">${step.title}</h3><div class="space-y-3">`;
+            for(let field of step.fields) {
+                const label = step.labels[field];
+                const type = step.types[field];
+                let value = wizardData[field] || '';
+                if(type === 'textarea') {
+                    html += `<div><label class="block text-xs text-gray-300 mb-1">${label}</label><textarea id="wiz_${field}" class="wizard-field" rows="2">${escapeHtml(value)}</textarea></div>`;
+                } else {
+                    html += `<div><label class="block text-xs text-gray-300 mb-1">${label}</label><input type="${type}" id="wiz_${field}" class="wizard-field" value="${escapeHtml(value)}" ${field==='name' ? 'required' : ''}></div>`;
+                }
+            }
+            html += `</div>`;
+            const container = document.getElementById('wizardStepContent');
+            container.style.opacity = '0';
+            setTimeout(() => { container.innerHTML = html; container.style.opacity = '1'; }, 100);
+            document.getElementById('wizardPrev').style.display = currentStep === 0 ? 'none' : 'block';
+            document.getElementById('wizardNext').innerText = currentStep === steps.length-1 ? t('save') : t('next');
+        }
+        
+        function saveCurrentStep() {
+            const step = steps[currentStep];
+            for(let field of step.fields) {
+                const el = document.getElementById(`wiz_${field}`);
+                if(el) wizardData[field] = el.type==='number' ? parseFloat(el.value)||0 : el.value;
+            }
+        }
+        
+        function nextStep() {
+            saveCurrentStep();
+            if(currentStep === steps.length-1) {
+                if(!wizardData.name) { showToast('⚠️ الاسم مطلوب'); return; }
+                if(!wizardData.endDate) { showToast('⚠️ تاريخ النهاية مطلوب'); return; }
+                addClientToUser(wizardData, () => { modal.remove(); showToast('✅ تمت إضافة العميل'); });
+            } else {
+                currentStep++;
+                updateStepUI();
+            }
+        }
+        
+        function prevStep() { if(currentStep>0) { saveCurrentStep(); currentStep--; updateStepUI(); } }
+        
+        document.getElementById('wizardNext').onclick = nextStep;
+        document.getElementById('wizardPrev').onclick = prevStep;
+        updateStepUI();
+    }
+    
+    // ---------------------- عرض تفاصيل العميل ونسخ المعلومات ----------------------
+    function showClientCopyModal(client) {
+        const info = `
+            🧑‍💼 الاسم: ${client.name}
+            📧 البريد: ${client.email || '-'}
+            📞 الهاتف: ${client.phone || '-'}
+            🛠️ الخدمة: ${client.serviceType || '-'}
+            🌍 الدولة: ${client.country || '-'}
+            📱 نوع التطبيق: ${client.appType || '-'}
+            🔑 KEY: ${client.key || '-'}
+            🖧 MAC: ${client.mac || '-'}
+            📅 تاريخ البداية: ${client.startDate}
+            📅 تاريخ النهاية: ${client.endDate}
+            💰 السعر: ${client.price} MAD
+            📈 صافي الربح: ${client.netProfit} MAD
+            📝 ملاحظات: ${client.notes || '-'}
+        `;
+        const modal = document.createElement('div'); modal.className = 'modal-glass';
+        modal.innerHTML = `
+            <div class="modal-content text-center">
+                <i class="fas fa-copy text-3xl text-purple-400 mb-2"></i>
+                <h3 class="text-xl font-bold mb-3">معلومات العميل</h3>
+                <div class="bg-white/10 rounded-xl p-3 text-right text-sm whitespace-pre-line font-mono text-gray-200 max-h-60 overflow-auto">${escapeHtml(info)}</div>
+                <div class="flex flex-wrap gap-2 mt-4">
+                    <button id="copyAllBtn" class="flex-1 bg-purple-600 py-2 rounded-full text-sm"><i class="fas fa-copy"></i> نسخ الكل</button>
+                    <button id="copyPhoneBtn" class="flex-1 bg-green-600 py-2 rounded-full text-sm"><i class="fas fa-phone-alt"></i> نسخ الهاتف</button>
+                    <button id="copyEmailBtn" class="flex-1 bg-blue-600 py-2 rounded-full text-sm"><i class="fas fa-envelope"></i> نسخ البريد</button>
+                </div>
+                <button onclick="this.closest('.modal-glass').remove()" class="mt-4 bg-gray-600 px-4 py-1.5 rounded-full text-sm">${t('cancel')}</button>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.querySelector('#copyAllBtn').onclick = () => copyToClipboard(info, t('copied'));
+        modal.querySelector('#copyPhoneBtn').onclick = () => copyToClipboard(client.phone || '', t('copied'));
+        modal.querySelector('#copyEmailBtn').onclick = () => copyToClipboard(client.email || '', t('copied'));
+    }
+    
+    // ---------------------- عرض لوحة التحكم ----------------------
+    function renderDashboard() {
+        if(!loggedInUser) return;
+        document.getElementById('userEmail').innerText = loggedInUser.email;
+        const clients = loggedInUser.clients || [];
+        document.getElementById('totalCount').innerText = clients.length;
+        let expiring = clients.filter(c=>{let d=daysRemaining(c.endDate); return d>=0 && d<=7;}).length;
+        document.getElementById('expiringCount').innerText = expiring;
+        let totalMAD = clients.reduce((s,c)=>s+(parseFloat(c.price)||0),0);
+        document.getElementById('revenue').innerText = (totalMAD*exchange[currentCurrency]).toFixed(2);
+        let totalProfit = clients.reduce((s,c)=>s+(parseFloat(c.netProfit)||0),0);
+        document.getElementById('totalProfit').innerText = (totalProfit*exchange[currentCurrency]).toFixed(2);
+        let search = document.getElementById('searchInput').value.toLowerCase();
+        let filtered = clients.filter(c=>c.name.toLowerCase().includes(search) || (c.email||'').toLowerCase().includes(search));
+        let html='';
+        filtered.forEach((c,idx)=>{
+            let days = daysRemaining(c.endDate);
+            let status = days<0 ? 'badge-expired' : (days<=7 ? 'badge-expiring' : 'badge-active');
+            let priceF = (c.price*exchange[currentCurrency]).toFixed(2)+' '+currencySymbols[currentCurrency];
+            let profitF = (c.netProfit*exchange[currentCurrency]).toFixed(2)+' '+currencySymbols[currentCurrency];
+            html+=`<tr><td class="p-1">${idx+1}<td class="p-1">${escapeHtml(c.name)}<td class="p-1">${escapeHtml(c.email||'-')}<td class="p-1">${escapeHtml(c.phone||'-')}<td class="p-1">${escapeHtml(c.serviceType||'-')}<td class="p-1">${escapeHtml(c.country||'-')}<td class="p-1">${escapeHtml(c.appType||'-')}<td class="text-xs">${escapeHtml(c.key||'-')}<td class="text-xs">${escapeHtml(c.mac||'-')}<td class="p-1">${c.startDate}<td class="p-1">${c.endDate}<td class="p-1"><span class="${status} px-1.5 py-0.5 text-xs">${days>=0?days+' '+t('daysLeft'):t('expired')}</span><td class="p-1">${priceF}<td class="p-1">${profitF}<td class="p-1 whitespace-nowrap">
+            <button onclick="editClientPrompt('${c.id}')" class="text-blue-300 mx-0.5 text-sm" title="${t('edit')}"><i class="fas fa-edit"></i></button>
+            <button onclick="deleteClientPrompt('${c.id}')" class="text-red-300 mx-0.5 text-sm" title="${t('delete')}"><i class="fas fa-trash"></i></button>
+            <button onclick="showClientCopyModalById('${c.id}')" class="text-green-300 mx-0.5 text-sm" title="${t('copy')}"><i class="fas fa-copy"></i></button>
+            <button onclick="shareClient('${c.id}')" class="text-yellow-300 mx-0.5 text-sm" title="مشاركة"><i class="fas fa-share-alt"></i></button>
+            </tr>`;
+        });
+        document.getElementById('clientsTable').innerHTML = html || `<tr><td colspan="15" class="text-center p-2">${t('no_clients')}</tr>`;
+        renderMilestones();
+        updateUILanguage();
+    }
+    window.showClientCopyModalById = (id) => { let c = loggedInUser.clients.find(c=>c.id==id); if(c) showClientCopyModal(c); };
+    window.shareClient = (id) => { let c = loggedInUser.clients.find(c=>c.id==id); if(c && c.phone) window.open(`https://wa.me/${c.phone.replace(/\D/g,'')}?text=${encodeURIComponent(`معلومات العميل:\nالاسم: ${c.name}\nالبريد: ${c.email}\nالهاتف: ${c.phone}\nتاريخ النهاية: ${c.endDate}`)}`,'_blank'); else showToast('رقم الهاتف غير متوفر للمشاركة'); };
+    window.editClientPrompt = (id) => { let c=loggedInUser.clients.find(c=>c.id==id); if(c){ let newName=prompt(t('name'),c.name); if(newName) c.name=newName; saveUsers(); renderDashboard(); renderNotifications(); } };
+    window.deleteClientPrompt = (id) => { if(confirm(t('confirmDel'))) deleteClient(id); };
+    
+    function renderMilestones() {
+        let count = loggedInUser.clients?.length||0;
+        let next = THRESHOLDS.find(th=>count<th.limit);
+        if(!next) return;
+        let pct = Math.min(100, Math.round((count/next.limit)*100));
+        let bar = document.getElementById('milestoneBar');
+        bar.innerHTML = `<div class="rounded-2xl p-3" style="background:rgba(139,92,246,0.1)"><div class="flex justify-between text-xs mb-1"><span>${next.icon} الهدف: ${next.label}</span><span>${count}/${next.limit} (${pct}%)</span></div><div class="h-2 bg-white/20 rounded-full"><div class="h-2 rounded-full" style="width:${pct}%;background:#8b5cf6"></div></div></div>`;
+    }
+    
+    // ---------------------- تغيير كلمة المرور ----------------------
+    function showChangePasswordModal() {
+        let modal=document.createElement('div'); modal.className='modal-glass';
+        modal.innerHTML=`<div class="modal-content"><h3 class="text-xl font-bold mb-3">${t('change_password')}</h3><input type="password" id="oldPass" class="auth-field mb-2" placeholder="${t('current_password')}"><input type="password" id="newPass" class="auth-field mb-2" placeholder="${t('new_password')}"><input type="password" id="confirmPass" class="auth-field mb-2" placeholder="${t('confirm_new_password')}"><div id="passErr" class="text-red-400 text-sm mb-2"></div><div class="flex gap-2"><button id="cancelPass" class="flex-1 bg-gray-600 py-2 rounded-full">${t('cancel')}</button><button id="submitPass" class="flex-1 bg-purple-600 py-2 rounded-full">${t('save')}</button></div></div>`;
+        document.body.appendChild(modal);
+        modal.querySelector('#submitPass').onclick=()=>{
+            let old=modal.querySelector('#oldPass').value, newp=modal.querySelector('#newPass').value, conf=modal.querySelector('#confirmPass').value;
+            if(false){ modal.querySelector('#passErr').innerText=t('wrong_current_password'); return; }
+            if(newp!==conf){ modal.querySelector('#passErr').innerText=t('password_mismatch'); return; }
+            if(newp.length<4){ modal.querySelector('#passErr').innerText='كلمة المرور قصيرة'; return; }
+            return;
+        };
+        modal.querySelector('#cancelPass').onclick=()=>modal.remove();
+    }
+    
+    // ---------------------- تحسين سياسة الخصوصية (أنيقة مع أنيميشن) ----------------------
+    function showPrivacyPolicy() {
+        const lang = currentLang;
+        const content = {
+            ar: { title: '🔒 سياسة الخصوصية', sections: [
+                { icon: '📦', title: 'تخزين البيانات', body: 'تتم إدارة تسجيل الدخول عبر Supabase ليبقى حسابك متاحاً على أكثر من جهاز، بينما تبقى بيانات العملاء المحلية محفوظة على هذا الجهاز فقط ما لم تقم بمزامنتها أو استيراد نسخة احتياطية.' },
+                { icon: '🔄', title: 'نقل الحساب', body: 'لنقل بياناتك إلى جهاز آخر، استخدم ميزة "نسخة احتياطية كاملة" ثم استوردها في الجهاز الجديد.' },
+                { icon: '💰', title: 'استرجاع الأموال', body: 'يمكن طلب استرجاع الاشتراك خلال 7 أيام من تاريخ الدفع إذا لم يتم استخدام الخدمة. تواصل معنا عبر واتساب مع إثبات الدفع.' },
+                { icon: '🏦', title: 'طرق الدفع', body: 'ندعم الدفع عبر Barid Bank، CIH Bank، Attijariwafa Bank. جميع المعاملات آمنة ومشفرة.' },
+                { icon: '🔐', title: 'أمان حسابك', body: 'كلمة مرورك مخزنة محلياً. نوصي باستخدام كلمة مرور قوية وعدم مشاركتها. استخدم خاصية "نسيت كلمة المرور" عند الحاجة.' },
+                { icon: '📞', title: 'تواصل معنا', body: 'للاستفسار أو طلب الاسترجاع: WhatsApp 0698490007 | البريد: brandrim.com@gmail.com' }
+            ] },
+            en: { title: '🔒 Privacy Policy', sections: [
+                { icon: '📦', title: 'Data Storage', body: 'All your data is stored locally on your device. No data is sent to our servers.' },
+                { icon: '🔄', title: 'Account Transfer', body: 'Use "Full Backup" to export your data and import it on another device.' },
+                { icon: '💰', title: 'Refund Policy', body: 'Subscription refunds can be requested within 7 days of payment if service not used.' },
+                { icon: '🏦', title: 'Payment Methods', body: 'We support Barid Bank, CIH Bank, Attijariwafa Bank. All transactions secure.' },
+                { icon: '🔐', title: 'Account Security', body: 'Your password is managed securely by Supabase Auth and is not stored in this page code.' },
+                { icon: '📞', title: 'Contact Us', body: 'WhatsApp: 0698490007 | Email: brandrim.com@gmail.com' }
+            ] },
+            fr: { title: '🔒 Politique de confidentialité', sections: [
+                { icon: '📦', title: 'Stockage', body: 'Toutes vos données sont stockées localement.' },
+                { icon: '🔄', title: 'Transfert', body: 'Utilisez la sauvegarde complète pour transférer vos données.' },
+                { icon: '💰', title: 'Remboursement', body: 'Remboursement sous 7 jours si le service n\'a pas été utilisé.' },
+                { icon: '🏦', title: 'Paiement', body: 'Nous acceptons Barid Bank, CIH Bank, Attijariwafa Bank.' },
+                { icon: '🔐', title: 'Sécurité', body: 'Mot de passe stocké localement. Utilisez un mot de passe fort.' },
+                { icon: '📞', title: 'Contact', body: 'WhatsApp: 0698490007 | Email: brandrim.com@gmail.com' }
+            ] }
+        };
+        const c = content[lang] || content.ar;
+        const modal = document.createElement('div'); modal.className = 'modal-glass';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:550px">
+                <div class="text-center mb-4">
+                    <i class="fas fa-shield-alt text-4xl text-purple-400 animate-pulse"></i>
+                    <h2 class="text-2xl font-bold bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent mt-2">${c.title}</h2>
+                    <p class="text-gray-400 text-xs">BrandRimApp Pro - شفافية وأمان</p>
+                </div>
+                <div class="space-y-3 max-h-96 overflow-y-auto px-1">
+                    ${c.sections.map(s => `
+                        <div class="privacy-card bg-white/5 rounded-xl p-3 transition-all">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="text-2xl">${s.icon}</span>
+                                <h4 class="font-bold text-purple-200">${s.title}</h4>
+                            </div>
+                            <p class="text-gray-300 text-sm leading-relaxed">${s.body}</p>
+                        </div>
+                    `).join('')}
+                </div>
+                <button onclick="this.closest('.modal-glass').remove()" class="mt-5 w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 py-2.5 rounded-full text-sm font-bold transition-all duration-300 shadow-lg">${lang==='ar'?'إغلاق':(lang==='fr'?'Fermer':'Close')}</button>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+    }
+    
+    // ---------------------- VIP مع أنيميشن ممتاز ----------------------
+    function showVipModal() {
+        let modal=document.createElement('div'); modal.className='modal-glass';
+        modal.innerHTML=`<div class="modal-content text-center"><i class="fas fa-crown text-amber-400 text-4xl animate-bounce"></i><h3 class="text-xl font-bold mt-2">${t('vip')}</h3><div class="grid grid-cols-3 gap-3 my-5"><div data-plan="monthly" class="vip-plan p-3 rounded-xl bg-white/10 cursor-pointer transition-all"><i class="fas fa-calendar-alt text-2xl mb-2"></i><p class="font-bold">${t('monthly')}</p><p class="text-lg font-bold text-amber-300">$${vipPrices.monthly}</p></div><div data-plan="yearly" class="vip-plan p-3 rounded-xl bg-white/10 cursor-pointer transition-all"><i class="fas fa-calendar-check text-2xl mb-2"></i><p class="font-bold">${t('yearly')}</p><p class="text-lg font-bold text-amber-300">$${vipPrices.yearly}</p></div><div data-plan="lifetime" class="vip-plan p-3 rounded-xl bg-white/10 cursor-pointer transition-all"><i class="fas fa-infinity text-2xl mb-2"></i><p class="font-bold">${t('lifetime')}</p><p class="text-lg font-bold text-amber-300">$${vipPrices.lifetime}</p></div></div><button id="vipOrder" class="bg-green-500 hover:bg-green-600 w-full py-2 rounded-full transition-all shadow-lg flex items-center justify-center gap-2"><i class="fab fa-whatsapp"></i> ${t('contact')} WhatsApp</button><button onclick="this.closest('.modal-glass').remove()" class="mt-3 text-gray-400 hover:text-white transition">${t('cancel')}</button></div>`;
+        document.body.appendChild(modal);
+        let selected='monthly';
+        modal.querySelectorAll('.vip-plan').forEach(el=>{ el.addEventListener('click',function(){ modal.querySelectorAll('.vip-plan').forEach(p=>p.classList.remove('selected')); this.classList.add('selected'); selected=this.dataset.plan; }); });
+        modal.querySelector('.vip-plan').classList.add('selected');
+        modal.querySelector('#vipOrder').onclick=()=>{ window.open(`https://wa.me/212698490007?text=${encodeURIComponent(`أريد اشتراك ${selected} بسعر ${vipPrices[selected]}$`)}`,'_blank'); showToast(t('subscriptionSent')); modal.remove(); };
+    }
+    
+    // ---------------------- تواصل معنا محسن ----------------------
+    function showContactModal() {
+        let modal=document.createElement('div'); modal.className='modal-glass';
+        modal.innerHTML=`
+            <div class="modal-content text-center">
+                <i class="fas fa-headset text-4xl text-purple-400 mb-2 animate-pulse"></i>
+                <h3 class="text-xl font-bold mb-1">${t('contact')}</h3>
+                <p class="text-gray-400 text-sm mb-4">نحن هنا لخدمتك 24/7</p>
+                <div class="space-y-2">
+                    <div class="contact-card flex items-center gap-3 p-3 bg-white/5 rounded-xl" onclick="window.open('https://wa.me/212698490007','_blank')">
+                        <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center"><i class="fab fa-whatsapp text-white text-xl"></i></div>
+                        <div class="flex-1 text-right"><p class="font-bold">WhatsApp</p><p class="text-xs text-gray-300">0698490007</p></div>
+                        <i class="fas fa-external-link-alt text-gray-400"></i>
+                    </div>
+                    <div class="contact-card flex items-center gap-3 p-3 bg-white/5 rounded-xl" onclick="window.location.href='tel:0698490007'">
+                        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center"><i class="fas fa-phone-alt text-white text-xl"></i></div>
+                        <div class="flex-1 text-right"><p class="font-bold">اتصال</p><p class="text-xs text-gray-300">0698490007</p></div>
+                        <i class="fas fa-phone text-gray-400"></i>
+                    </div>
+                    <div class="contact-card flex items-center gap-3 p-3 bg-white/5 rounded-xl" onclick="window.location.href='mailto:brandrim.com@gmail.com'">
+                        <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center"><i class="fas fa-envelope text-white text-xl"></i></div>
+                        <div class="flex-1 text-right"><p class="font-bold">البريد الإلكتروني</p><p class="text-xs text-gray-300">brandrim.com@gmail.com</p></div>
+                        <i class="fas fa-copy text-gray-400 copy-contact-email"></i>
+                    </div>
+                    <div class="contact-card flex items-center gap-3 p-3 bg-white/5 rounded-xl" onclick="window.open('https://www.brandrim.com','_blank')">
+                        <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center"><i class="fas fa-globe text-white text-xl"></i></div>
+                        <div class="flex-1 text-right"><p class="font-bold">الموقع الرسمي</p><p class="text-xs text-gray-300">www.brandrim.com</p></div>
+                        <i class="fas fa-external-link-alt text-gray-400"></i>
+                    </div>
+                </div>
+                <button onclick="this.closest('.modal-glass').remove()" class="mt-5 bg-gray-600 px-4 py-1.5 rounded-full text-sm w-full">${t('cancel')}</button>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.querySelector('.copy-contact-email')?.addEventListener('click',(e)=>{ e.stopPropagation(); copyToClipboard('brandrim.com@gmail.com', t('copied')); });
+    }
+    
+    // ---------------------- النسخ الاحتياطي ----------------------
+    function exportFullBackup() {}
+    function importFullBackup(file) {}
+    
+    // ---------------------- أحداث ----------------------
+    document.getElementById('showLoginBtn')?.addEventListener('click',()=>{ document.getElementById('loginForm').style.display='block'; document.getElementById('signupForm').style.display='none'; });
+    document.getElementById('showSignupBtn')?.addEventListener('click',()=>{ document.getElementById('loginForm').style.display='none'; document.getElementById('signupForm').style.display='block'; });
+    
+    
+    
+    document.getElementById('changePassBtn')?.addEventListener('click', showChangePasswordModal);
+    document.getElementById('logoutBtn')?.addEventListener('click',()=>{ loggedInUser=null; document.getElementById('authScreen').style.display='flex'; document.getElementById('dashboardScreen').style.display='none'; });
+    document.getElementById('addClientBtn')?.addEventListener('click', openAddClientWizard);
+    document.getElementById('contactBtn')?.addEventListener('click', showContactModal);
+    document.getElementById('vipBtn')?.addEventListener('click', showVipModal);
+    document.getElementById('exportFullBackup')?.addEventListener('click', exportFullBackup);
+    document.getElementById('importFullBackup')?.addEventListener('click',()=>document.getElementById('importFile').click());
+    document.getElementById('importFile')?.addEventListener('change',e=>{ if(e.target.files[0]) importFullBackup(e.target.files[0]); e.target.value=''; });
+    document.getElementById('clearNotifsState')?.addEventListener('click',()=>{ skippedNotifs=[]; processedNotifs=[]; sessionStorage.removeItem('skippedNotifs'); sessionStorage.removeItem('processedNotifs'); renderNotifications(); showToast('🧹 تم مسح حالة الإشعارات'); });
+    document.getElementById('exportCsv')?.addEventListener('click',()=>{ let clients=loggedInUser.clients; let csv="الاسم,البريد,الهاتف,السعر,صافي الربح\n"+clients.map(c=>`${c.name},${c.email},${c.phone},${c.price},${c.netProfit}`).join("\n"); let blob=new Blob(["\uFEFF"+csv],{type:'text/csv'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='clients.csv'; a.click(); });
+    document.getElementById('exportJson')?.addEventListener('click',()=>{ let blob=new Blob([JSON.stringify(loggedInUser.clients)],{type:'application/json'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='clients.json'; a.click(); });
+    document.querySelectorAll('.curr-btn').forEach(btn=>btn.addEventListener('click',()=>{ currentCurrency=btn.dataset.curr; localStorage.setItem('currency',currentCurrency); renderDashboard(); }));
+    document.getElementById('searchInput')?.addEventListener('input',()=>renderDashboard());
+    document.getElementById('privacyBtn')?.addEventListener('click', showPrivacyPolicy);
+    
+    // اللغة
+    function updateUILanguage() { document.querySelectorAll('[data-i18n]').forEach(el=>{ let k=el.getAttribute('data-i18n'); if(k) el.innerText=t(k); }); document.getElementById('searchInput')?.setAttribute('placeholder',t('search')); }
+    function applyLanguage() { document.documentElement.dir=currentLang==='ar'?'rtl':'ltr'; document.getElementById('langFlag').innerText=currentLang==='ar'?'🇲🇦':(currentLang==='en'?'🇬🇧':'🇫🇷'); document.getElementById('langName').innerText=currentLang==='ar'?'العربية':(currentLang==='en'?'English':'Français'); updateUILanguage(); if(loggedInUser) renderDashboard(); }
+    document.getElementById('langBtn')?.addEventListener('click',(e)=>{ e.stopPropagation(); let menu=document.getElementById('langMenu'); if(menu) menu.classList.toggle('hidden'); else { let m=document.createElement('div'); m.id='langMenu'; m.className='absolute top-full mt-2 left-0 bg-gray-800 rounded-xl flex flex-col w-32 z-50'; m.innerHTML='<div data-lang="ar" class="lang-opt px-4 py-2 hover:bg-purple-500 cursor-pointer">🇲🇦 العربية</div><div data-lang="en" class="lang-opt px-4 py-2 hover:bg-purple-500 cursor-pointer">🇬🇧 English</div><div data-lang="fr" class="lang-opt px-4 py-2 hover:bg-purple-500 cursor-pointer">🇫🇷 Français</div>'; document.getElementById('langBtn').parentNode.appendChild(m); document.querySelectorAll('.lang-opt').forEach(opt=>opt.addEventListener('click',()=>{ currentLang=opt.dataset.lang; localStorage.setItem('lang',currentLang); applyLanguage(); m.remove(); })); } });
+
+    showChangePasswordModal = function() {
+        let modal=document.createElement('div'); modal.className='modal-glass';
+        modal.innerHTML=`<div class="modal-content"><h3 class="text-xl font-bold mb-3">${t('change_password')}</h3><input type="password" id="oldPass" class="auth-field mb-2" placeholder="${t('current_password')}"><input type="password" id="newPass" class="auth-field mb-2" placeholder="${t('new_password')}"><input type="password" id="confirmPass" class="auth-field mb-2" placeholder="${t('confirm_new_password')}"><div id="passErr" class="text-red-400 text-sm mb-2"></div><div class="flex gap-2"><button id="cancelPass" class="flex-1 bg-gray-600 py-2 rounded-full">${t('cancel')}</button><button id="submitPass" class="flex-1 bg-purple-600 py-2 rounded-full">${t('save')}</button></div></div>`;
+        document.body.appendChild(modal);
+        modal.querySelector('#submitPass').onclick=async ()=>{
+            let old=modal.querySelector('#oldPass').value, newp=modal.querySelector('#newPass').value, conf=modal.querySelector('#confirmPass').value;
+            if(newp!==conf){ modal.querySelector('#passErr').innerText=t('password_mismatch'); return; }
+            if(newp.length<4){ modal.querySelector('#passErr').innerText='Password is too short'; return; }
+            const normalizedEmail = normalizeEmail(loggedInUser?.email);
+            const loginCheck = await window.supabaseClient.auth.signInWithPassword({ email: normalizedEmail, password: old });
+            if(loginCheck.error){ modal.querySelector('#passErr').innerText=loginCheck.error.message || t('wrong_current_password'); return; }
+            const updateResult = await window.supabaseClient.auth.updateUser({ password: newp });
+            if(updateResult.error){ modal.querySelector('#passErr').innerText=updateResult.error.message; return; }
+            modal.remove();
+            showToast(t('password_updated'));
+        };
+        modal.querySelector('#cancelPass').onclick=()=>modal.remove();
+    };
+
+    exportFullBackup = function() {
+        if(!loggedInUser) return;
+        const backup = {
+            version: 'BrandRimApp-v3',
+            user: {
+                id: loggedInUser.id,
+                email: normalizeEmail(loggedInUser.email),
+                name: loggedInUser.name,
+                clients: Array.isArray(loggedInUser.clients) ? loggedInUser.clients : [],
+                unlockedThresholds: Array.isArray(loggedInUser.unlockedThresholds) ? loggedInUser.unlockedThresholds : []
+            }
+        };
+        const blob = new Blob([JSON.stringify(backup)], {type:'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `brandrim_backup_${Date.now()}.json`;
+        a.click();
+        showToast('✅ تم تصدير النسخة');
+    };
+
+    importFullBackup = function(file) {
+        if(!loggedInUser) {
+            alert('Please log in before importing a backup.');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = ev => {
+            try {
+                const data = JSON.parse(ev.target.result);
+                let importedUser = null;
+                if(data?.user) {
+                    importedUser = data.user;
+                } else if(Array.isArray(data?.users)) {
+                    importedUser = data.users.find(u => normalizeEmail(u.email) === normalizeEmail(loggedInUser.email)) || data.users[0];
+                }
+                if(!importedUser) throw new Error('Invalid backup');
+                loggedInUser = {
+                    ...loggedInUser,
+                    name: importedUser.name || loggedInUser.name,
+                    clients: Array.isArray(importedUser.clients) ? importedUser.clients : [],
+                    unlockedThresholds: Array.isArray(importedUser.unlockedThresholds) ? importedUser.unlockedThresholds : []
+                };
+                saveUsers();
+                showToast('✅ تم استيراد النسخة');
+                renderDashboard();
+                renderNotifications();
+            } catch(e) {
+                showToast('❌ ملف غير صالح');
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    function rebindElement(id) {
+        const element = document.getElementById(id);
+        if(!element) return null;
+        const clone = element.cloneNode(true);
+        element.replaceWith(clone);
+        return clone;
+    }
+
+    function bindSupabaseAuthHandlers() {
+        const loginForm = rebindElement('loginForm') || document.querySelector('form');
+        const signupForm = rebindElement('signupForm');
+        const loginButton = rebindElement('loginButton');
+        const signupButton = rebindElement('doSignup');
+        const forgotButton = rebindElement('forgotPass');
+        const logoutButton = rebindElement('logoutBtn');
+        const changePassButton = rebindElement('changePassBtn');
+        const exportButton = rebindElement('exportFullBackup');
+        const importButton = rebindElement('importFullBackup');
+        const importInput = rebindElement('importFile');
+
+        if(loginForm) {
+            loginForm.onclick = (e) => { console.log('Click detected!'); };
+            console.log('Step A: loginForm binding attached');
+        }
+        if(loginButton) {
+            console.log('Step B: login button found');
+        }
+
+        const directLoginHandler = async (e)=>{
+            if(e?.preventDefault) e.preventDefault();
+            console.log('Step 0.5: Direct click handler entered');
+            console.log('Step 1: Button Clicked');
+            let email=document.getElementById('email')?.value?.trim() || '';
+            let pass=document.getElementById('password')?.value || '';
+            let verify=document.getElementById('loginVerify').checked;
+            console.log('Step 2: Data Collected', { email: normalizeEmail(email), verifyChecked: verify, hasPassword: !!pass });
+            if(typeof SUPABASE_URL !== 'string' || !SUPABASE_URL.startsWith('https://')) {
+                console.error('Supabase URL is invalid.', SUPABASE_URL);
+                alert('Supabase URL is invalid.');
+                return;
+            }
+            if(!window.supabaseClient) {
+                console.error('Supabase client is not initialized.');
+                alert('Supabase is not initialized.');
+                return;
+            }
+            const normalizedEmail = normalizeEmail(email);
+            console.log('Step 2.5: Normalized Email Ready', normalizedEmail);
+            console.log('Step 3: Sending to Supabase');
+            const { error } = await window.supabaseClient.auth.signInWithPassword({ email: normalizedEmail, password: pass });
+            console.log('Step 4: Supabase response received', { hasError: !!error, message: error?.message || null });
+            if(error){ alert(getAuthErrorMessage(error, 'Login failed.')); }
+        };
+
+        if(loginButton) {
+            loginButton.onclick = directLoginHandler;
+            loginButton.addEventListener('click', ()=>{
+                console.log('Step 0.4: loginButton click event observed');
+            });
+        }
+
+        loginForm?.addEventListener('submit', (e)=>{
+            e.preventDefault();
+            console.log('Step 0.45: loginForm submit prevented');
+        });
+
+        signupButton?.addEventListener('click', ()=>{
+            console.log('Step 1: Button Clicked');
+        });
+
+        signupForm?.addEventListener('submit', async (e)=>{
+            e.preventDefault();
+            console.log('Step 1: Button Clicked');
+            let email=document.getElementById('signupEmail').value.trim();
+            let name=document.getElementById('signupName').value.trim();
+            let pass=document.getElementById('signupPassword').value;
+            let confirm=document.getElementById('signupConfirm').value;
+            let verify=document.getElementById('signupVerify').checked;
+            console.log('Step 2: Data Collected', { email: normalizeEmail(email), verifyChecked: verify, hasPassword: !!pass, hasName: !!name });
+            if(!email||!name){ alert(t('email')+" و "+t('fullname')+" مطلوبان"); return; }
+            if(pass!==confirm){ alert(t('password_mismatch')); return; }
+            if(!window.supabaseClient) {
+                console.error('Supabase client is not initialized.');
+                alert('Supabase is not initialized.');
+                return;
+            }
+            const normalizedEmail = normalizeEmail(email);
+            console.log('Step 3: Sending to Supabase');
+            const { data, error } = await window.supabaseClient.auth.signUp({
+                email: normalizedEmail,
+                password: pass,
+                options: {
+                    data: {
+                        full_name: name,
+                        name
+                    }
+                }
+            });
+            if(error){ alert(getAuthErrorMessage(error, 'Sign-up failed.')); return; }
+            if(data?.user) {
+                alert(data.session ? 'Account created successfully.' : 'Account created. If email confirmation is enabled, confirm your email before logging in.');
+                document.getElementById('showLoginBtn').click();
+            }
+        });
+
+        forgotButton?.addEventListener('click', async ()=>{
+            let email = prompt(t('email'));
+            if(!email) return;
+            const normalizedEmail = normalizeEmail(email);
+            const { error } = await window.supabaseClient.auth.resetPasswordForEmail(normalizedEmail, {
+                redirectTo: window.location.href
+            });
+            if(error){ alert(getAuthErrorMessage(error, 'Password reset failed.')); return; }
+            alert('Password reset email sent.');
+        });
+
+        logoutButton?.addEventListener('click', async ()=>{
+            const { error } = await window.supabaseClient.auth.signOut({ scope: 'global' });
+            if(error){ alert(getAuthErrorMessage(error, 'Logout failed.')); return; }
+            showLoggedOutView();
+        });
+
+        changePassButton?.addEventListener('click', showChangePasswordModal);
+        exportButton?.addEventListener('click', exportFullBackup);
+        importButton?.addEventListener('click', ()=>document.getElementById('importFile')?.click());
+        importInput?.addEventListener('change', e=>{ if(e.target.files[0]) importFullBackup(e.target.files[0]); e.target.value=''; });
+    }
+
+    applyLanguage();
+    bindSupabaseAuthHandlers();
+    initializeAuth();
+</script>
+</body>
+</html>
